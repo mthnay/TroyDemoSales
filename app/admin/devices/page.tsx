@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { collection, addDoc, getDocs, deleteDoc, doc } from "firebase/firestore";
+import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { motion } from "framer-motion";
 import Image from "next/image";
@@ -16,7 +16,8 @@ interface DeviceData {
   category: string;
   stock: number;
   description: string;
-  imageUrl: string;
+  imageUrl?: string;
+  imageUrls?: string[];
   createdAt: string;
 }
 
@@ -34,7 +35,8 @@ export default function DevicesManagement() {
   const [category, setCategory] = useState("iPhone");
   const [stock, setStock] = useState("1");
   const [description, setDescription] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const fetchDevices = async () => {
     const querySnapshot = await getDocs(collection(db, "devices"));
@@ -85,21 +87,22 @@ export default function DevicesManagement() {
     });
   };
 
-  const handleAddDevice = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!imageFile) {
-      setMessage("Hata: Lütfen bir fotoğraf seçin.");
+    if (!editingId && imageFiles.length === 0) {
+      setMessage("Hata: Lütfen en az bir fotoğraf seçin.");
       return;
     }
     setLoading(true);
     setMessage("");
 
     try {
-      // 1. Sıkıştır ve Base64'e çevir
-      const base64Image = await compressImage(imageFile);
+      let base64Images: string[] | undefined;
+      if (imageFiles.length > 0) {
+        base64Images = await Promise.all(imageFiles.map(f => compressImage(f)));
+      }
 
-      // 2. Doğrudan Firestore'a kaydet (Storage kullanmadan)
-      await addDoc(collection(db, "devices"), {
+      const deviceData: any = {
         name,
         price: Number(price),
         batteryHealth: Number(batteryHealth),
@@ -108,28 +111,55 @@ export default function DevicesManagement() {
         category,
         stock: Number(stock),
         description,
-        imageUrl: base64Image,
-        createdAt: new Date().toISOString()
-      });
+      };
 
-      setMessage("Cihaz başarıyla eklendi.");
-      // Reset form
-      setName("");
-      setPrice("");
-      setBatteryHealth("");
-      setGrade("A");
-      setWarranty("Devam Ediyor");
-      setCategory("iPhone");
-      setStock("1");
-      setDescription("");
-      setImageFile(null);
-      
+      if (base64Images) {
+        deviceData.imageUrls = base64Images;
+      }
+
+      if (editingId) {
+        await updateDoc(doc(db, "devices", editingId), deviceData);
+        setMessage("Cihaz başarıyla güncellendi.");
+      } else {
+        deviceData.createdAt = new Date().toISOString();
+        await addDoc(collection(db, "devices"), deviceData);
+        setMessage("Cihaz başarıyla eklendi.");
+      }
+
+      handleCancelEdit();
       fetchDevices();
     } catch (error: any) {
       setMessage("Hata: " + error.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEditClick = (d: DeviceData) => {
+    setEditingId(d.id);
+    setName(d.name);
+    setPrice(d.price.toString());
+    setBatteryHealth(d.batteryHealth.toString());
+    setGrade(d.grade);
+    setWarranty(d.warranty);
+    setCategory(d.category || "iPhone");
+    setStock(d.stock?.toString() || "1");
+    setDescription(d.description || "");
+    setImageFiles([]);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setName("");
+    setPrice("");
+    setBatteryHealth("");
+    setGrade("A");
+    setWarranty("Devam Ediyor");
+    setCategory("iPhone");
+    setStock("1");
+    setDescription("");
+    setImageFiles([]);
   };
 
   const handleDelete = async (id: string) => {
@@ -150,8 +180,8 @@ export default function DevicesManagement() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "30px" }}>
         {/* Form */}
         <div className="glass-panel" style={{ padding: "24px", height: "fit-content" }}>
-          <h2 style={{ fontSize: "18px", marginBottom: "20px" }}>Yeni Cihaz Ekle</h2>
-          <form onSubmit={handleAddDevice} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <h2 style={{ fontSize: "18px", marginBottom: "20px" }}>{editingId ? "Cihazı Düzenle" : "Yeni Cihaz Ekle"}</h2>
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             {message && (
               <div style={{ 
                 padding: "10px", 
@@ -165,14 +195,30 @@ export default function DevicesManagement() {
             )}
 
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <label style={{ fontSize: "13px", fontWeight: 500 }}>Fotoğraf</label>
+              <label style={{ fontSize: "13px", fontWeight: 500 }}>Fotoğraflar (En fazla 4 adet)</label>
               <input 
                 type="file" 
                 accept="image/*"
-                onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                required
+                multiple
+                onChange={(e) => {
+                  if (e.target.files) {
+                    const files = Array.from(e.target.files).slice(0, 4);
+                    setImageFiles(files);
+                  }
+                }}
+                required={!editingId}
                 style={{ fontSize: "14px" }}
               />
+              {imageFiles.length > 0 && (
+                <div style={{ fontSize: "12px", color: "#666" }}>
+                  {imageFiles.length} fotoğraf seçildi.
+                </div>
+              )}
+              {editingId && (
+                <div style={{ fontSize: "11px", color: "#999", marginTop: "2px" }}>
+                  (Yeni fotoğraf seçmezseniz eski fotoğraflar korunur)
+                </div>
+              )}
             </div>
             
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -271,9 +317,16 @@ export default function DevicesManagement() {
               />
             </div>
 
-            <button type="submit" className="btn-primary" disabled={loading} style={{ marginTop: "10px" }}>
-              {loading ? "Yükleniyor..." : "Cihazı Ekle"}
-            </button>
+            <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+              <button type="submit" className="btn-primary" disabled={loading} style={{ flex: 1 }}>
+                {loading ? "Yükleniyor..." : editingId ? "Güncelle" : "Cihazı Ekle"}
+              </button>
+              {editingId && (
+                <button type="button" onClick={handleCancelEdit} style={{ flex: 1, padding: "12px", background: "rgba(0,0,0,0.05)", borderRadius: "12px", fontWeight: 600, border: "none", cursor: "pointer" }}>
+                  İptal
+                </button>
+              )}
+            </div>
           </form>
         </div>
 
@@ -282,9 +335,15 @@ export default function DevicesManagement() {
           <h2 style={{ fontSize: "18px", marginBottom: "20px" }}>Eklenen Cihazlar</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "16px" }}>
             {devices.map((d) => (
-              <div key={d.id} style={{ background: "rgba(255,255,255,0.5)", borderRadius: "14px", overflow: "hidden", border: "1px solid rgba(0,0,0,0.05)", display: "flex", flexDirection: "column" }}>
+              <div 
+                key={d.id} 
+                onClick={() => handleEditClick(d)}
+                style={{ background: "rgba(255,255,255,0.5)", borderRadius: "14px", overflow: "hidden", border: "1px solid rgba(0,0,0,0.05)", display: "flex", flexDirection: "column", cursor: "pointer", transition: "transform 0.2s" }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = "scale(1.02)"}
+                onMouseLeave={(e) => e.currentTarget.style.transform = "scale(1)"}
+              >
                 <div style={{ position: "relative", width: "100%", height: "150px", background: "white" }}>
-                  <Image src={d.imageUrl} alt={d.name} fill style={{ objectFit: "contain", padding: "10px" }} />
+                  <Image src={d.imageUrls?.[0] || d.imageUrl || ""} alt={d.name} fill style={{ objectFit: "contain", padding: "10px" }} />
                 </div>
                 <div style={{ padding: "16px", flex: 1, display: "flex", flexDirection: "column" }}>
                   <h3 style={{ fontSize: "14px", fontWeight: 600, marginBottom: "4px" }}>{d.name}</h3>
@@ -297,7 +356,7 @@ export default function DevicesManagement() {
                     <span style={{ fontSize: "11px", padding: "2px 8px", background: "rgba(0,0,0,0.05)", borderRadius: "10px" }}>Stok: {d.stock}</span>
                   </div>
                   <button 
-                    onClick={() => handleDelete(d.id)}
+                    onClick={(e) => { e.stopPropagation(); handleDelete(d.id); }}
                     style={{ marginTop: "auto", padding: "8px", background: "rgba(255, 59, 48, 0.1)", color: "var(--danger)", borderRadius: "8px", fontSize: "12px", fontWeight: 600, cursor: "pointer", border: "none" }}
                   >
                     Sil

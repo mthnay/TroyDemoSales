@@ -19,6 +19,7 @@ export default function DeviceDetail() {
   const [fetching, setFetching] = useState(true);
   const [requesting, setRequesting] = useState(false);
   const [message, setMessage] = useState("");
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -82,6 +83,8 @@ export default function DeviceDetail() {
   if (loading || fetching) return <div style={{ padding: 40, textAlign: "center", color: "#666" }}>Yükleniyor...</div>;
   if (!device) return <div style={{ padding: 40, textAlign: "center" }}>Cihaz bulunamadı.</div>;
 
+  const images = device.imageUrls || (device.imageUrl ? [device.imageUrl] : []);
+
   return (
     <div style={{ padding: "40px", maxWidth: "1000px", margin: "0 auto" }}>
       <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: "8px", color: "#666", marginBottom: "30px", fontWeight: 500 }}>
@@ -95,8 +98,36 @@ export default function DeviceDetail() {
         className="glass-panel"
         style={{ display: "flex", flexWrap: "wrap", overflow: "hidden" }}
       >
-        <div style={{ flex: "1 1 400px", background: "white", position: "relative", minHeight: "400px" }}>
-          <Image src={device.imageUrl} alt={device.name} fill style={{ objectFit: "contain", padding: "40px" }} />
+        <div style={{ flex: "1 1 400px", background: "white", position: "relative", minHeight: "400px", display: "flex", flexDirection: "column" }}>
+          <div style={{ position: "relative", width: "100%", flex: 1, minHeight: "350px" }}>
+            {images.length > 0 && (
+              <Image src={images[selectedImageIndex]} alt={device.name} fill style={{ objectFit: "contain", padding: "40px" }} />
+            )}
+          </div>
+          {images.length > 1 && (
+            <div style={{ display: "flex", gap: "10px", padding: "20px", overflowX: "auto", borderTop: "1px solid rgba(0,0,0,0.05)" }}>
+              {images.map((imgUrl: string, idx: number) => (
+                <div 
+                  key={idx} 
+                  onClick={() => setSelectedImageIndex(idx)}
+                  style={{ 
+                    position: "relative", 
+                    width: "80px", 
+                    height: "80px", 
+                    flexShrink: 0, 
+                    border: selectedImageIndex === idx ? "2px solid var(--foreground)" : "1px solid rgba(0,0,0,0.1)",
+                    borderRadius: "8px",
+                    overflow: "hidden",
+                    cursor: "pointer",
+                    opacity: selectedImageIndex === idx ? 1 : 0.5,
+                    transition: "all 0.2s"
+                  }}
+                >
+                  <Image src={imgUrl} alt={`${device.name} ${idx+1}`} fill style={{ objectFit: "cover" }} />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         
         <div style={{ flex: "1 1 400px", padding: "40px", display: "flex", flexDirection: "column" }}>
