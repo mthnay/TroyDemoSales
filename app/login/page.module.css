@@ -1,0 +1,81 @@
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  /* Use a background that respects theme */
+  background: var(--background);
+  background-image: radial-gradient(circle at top right, rgba(0, 113, 227, 0.15), transparent 40%),
+                    radial-gradient(circle at bottom left, rgba(0, 113, 227, 0.1), transparent 40%);
+  padding: 20px;
+}
+
+.loginCard {
+  width: 100%;
+  max-width: 400px;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  text-align: center;
+  /* Extra shadow for premium feel */
+  box-shadow: var(--shadow-lg);
+}
+
+.logo {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  letter-spacing: -0.5px;
+  color: var(--foreground);
+}
+
+.subtitle {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  gap: 8px;
+}
+
+.inputGroup label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+}
+
+.input {
+  padding: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
+  font-size: 15px;
+  color: #1d1d1f;
+  outline: none;
+  transition: all 0.2s;
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.input:focus {
+  border-color: #0071e3;
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.2);
+  background: #ffffff;
+}
+
+.error {
+  color: var(--danger);
+  font-size: 13px;
+  background: rgba(255, 59, 48, 0.1);
+  padding: 10px;
+  border-radius: 8px;
+}

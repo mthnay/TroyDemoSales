@@ -1,0 +1,77 @@
+.adminContainer {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--background);
+}
+
+.sidebar {
+  width: 280px;
+  margin: 20px;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 20px;
+  height: calc(100vh - 40px);
+}
+
+.sidebarHeader {
+  padding: 30px 20px;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.sidebarHeader h2 {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.sidebarNav {
+  flex: 1;
+  padding: 20px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  color: var(--foreground);
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.navLink:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--primary);
+}
+
+.sidebarFooter {
+  padding: 20px;
+  border-top: 1px solid var(--card-border);
+}
+
+.logoutBtn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  color: var(--danger);
+  font-weight: 500;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.logoutBtn:hover {
+  background: rgba(255, 59, 48, 0.1);
+}
+
+.mainContent {
+  flex: 1;
+  padding: 20px 40px 20px 0;
+  overflow-y: auto;
+}
