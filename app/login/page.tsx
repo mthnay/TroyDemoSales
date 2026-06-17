@@ -36,7 +36,9 @@ export default function LoginPage() {
       await signInWithEmailAndPassword(auth, email, password);
       router.push("/");
     } catch (err: any) {
-      setError("E-posta veya şifre hatalı.");
+      console.error("Giriş Hatası:", err);
+      // Hatanın tam sebebini ekrana yansıtıyoruz
+      setError(err.message || "Giriş yapılamadı.");
     } finally {
       setIsSubmitting(false);
     }
